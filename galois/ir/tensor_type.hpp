@@ -234,6 +234,32 @@ class IntType : public RealNumberType {
     bool is_signed = true;
 };
 
+class BoolType : public TensorType {
+protected:
+    BoolType() = default;
+
+public:
+    static std::shared_ptr<BoolType> Create() {
+        std::shared_ptr<BoolType> self(new BoolType);
+        for (auto ir_type : global_context.created_types) {
+            if (auto ir_bool_type = Cast<BoolType>(ir_type)) {
+                return ir_bool_type;
+            }
+        }
+
+        self->value_type = nullptr;
+        self->shape.resize(0);
+        self->stride.resize(0);
+
+        self->bytes = 1;
+        self->name = "bool";
+        self->fullname = "bool";
+
+        global_context.created_types.push_back(self);
+        return self;
+    }
+};
+
 class VoidType : public TensorType {
    protected:
     VoidType() = default;
@@ -275,32 +301,6 @@ class OperatorType : public TensorType {
    public:
     std::vector<std::shared_ptr<TensorType>> ir_input_types;
     std::shared_ptr<TensorType> output_type;
-};
-
-class BoolType : public TensorType {
-protected:
-    BoolType() = default;
-
-public:
-    static std::shared_ptr<BoolType> Create() {
-        for (auto ir_type : global_context.created_types) {
-            if (auto ir_bool_type = Cast<BoolType>(ir_type)) {
-                return ir_bool_type;
-            }
-        }
-
-        std::shared_ptr<BoolType> self(new BoolType);
-        self->value_type = nullptr;
-        self->shape.resize(0);
-        self->stride.resize(0);
-
-        self->bytes = 1;  // 通常1字节存储bool
-        self->name = "bool";
-        self->fullname = "bool";
-
-        global_context.created_types.push_back(self);
-        return self;
-    }
 };
 
 }  // namespace galois::ir

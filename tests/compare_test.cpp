@@ -1,7 +1,7 @@
 #include "galois/op/compare.hpp"  // 假设你把 CompareCreator 写在这里
 #include "tests/galois_test.hpp"
 
-TEST(GaloisTests, TestLess) {
+TEST(GaloisTests, TestCompare) {
     // 创建张量类型：输入为 float32 向量，输出为 bool 向量
     int64_t length = 102400000;
     auto ir_input_type = ir::f32->Tile(length);

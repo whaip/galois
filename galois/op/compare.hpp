@@ -5,7 +5,7 @@
 
 namespace galois::op {
 
-template <ir::CompareInstruction::Operation Operation>
+template <ir::CompareInstruction::CmpOp Operation>
 class CompareCreator : public BinaryCreator {
 public:
     static std::shared_ptr<CompareCreator> Create() {
@@ -28,7 +28,7 @@ public:
                        std::shared_ptr<ir::Tensor> ir_output,
                        std::shared_ptr<ir::Builder> ir_builder) override {
         if (ir_input0->type->IsScalar() && ir_input1->type->IsScalar()) {
-            auto ir_re = ir_builder->Create<ir::CompareInstruction>(Operation, ir_input0, ir_input1);
+            auto ir_re = ir::CompareInstruction::Create(Operation, ir_input0, ir_input1);
             ir_builder->Write(ir_re, ir_output);
             return;
         }
@@ -38,12 +38,16 @@ public:
         auto ir_accessor_in0 = ir_builder->CreateIdentityAccessor(ir_input0);
         auto ir_accessor_in1 = ir_builder->CreateIdentityAccessor(ir_input1);
 
-        this->ExpressInline(ir_accessor_in0, ir_accessor_in1, ir_accessor_out, ir_builder);
+        // 在网格内对每个元素进行比较操作
+        auto ir_val0 = ir_builder->IndexingRead(ir_accessor_in0);
+        auto ir_val1 = ir_builder->IndexingRead(ir_accessor_in1);
+        auto ir_cmp_result = ir::CompareInstruction::Create(Operation, ir_val0, ir_val1);
+        ir_builder->Write(ir_cmp_result, ir_accessor_out);
     }
 
 private:
     static std::string GetOperationName() {
-        using Op = ir::CompareInstruction::Operation;
+        using Op = ir::CompareInstruction::CmpOp;
         if (Operation == Op::EQ) return "Equal";
         if (Operation == Op::NE) return "NotEqual";
         if (Operation == Op::LT) return "LessThan";

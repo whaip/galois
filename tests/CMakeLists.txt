@@ -26,6 +26,7 @@ add_executable(galois_test
     relu_test.cpp
     gelu_test.cpp
     copy_test.cpp
+    compare_test.cpp
     embedding_test.cpp
     normalize_test.cpp
     convolution_test.cpp
