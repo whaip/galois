@@ -14,16 +14,13 @@ class SelectCreator : public Creator {
         return self;
     }
 
-    // Helper function for type inference with 3 inputs
     std::shared_ptr<ir::TensorType> InferTypeImpl(
         std::shared_ptr<ir::TensorType> ir_condition_type,
         std::shared_ptr<ir::TensorType> ir_true_type,
         std::shared_ptr<ir::TensorType> ir_false_type) {
         
-        // Condition must be boolean tensor
         GALOIS_ASSERT(ir_condition_type->DataType() == ir::bool_);
         
-        // True and false values must have the same type
         GALOIS_ASSERT(ir_true_type->IsMatch(ir_false_type));
         
         // Handle scalar case
@@ -31,21 +28,11 @@ class SelectCreator : public Creator {
             return ir_true_type;
         }
         
-        // Handle tensor case with broadcasting
-        auto output_shape = ir_true_type->shape;
-        
-        // Check if condition can be broadcasted to match the value shape
         if (!ir_condition_type->IsScalar()) {
-            GALOIS_ASSERT(ir_condition_type->shape.size() == ir_true_type->shape.size());
-            for (int64_t i = 0; i < ir_condition_type->shape.size(); ++i) {
-                GALOIS_ASSERT(ir_condition_type->shape[i] == ir_true_type->shape[i] ||
-                              ir_condition_type->shape[i] == 1 ||
-                              ir_true_type->shape[i] == 1);
-                output_shape[i] = std::max(ir_condition_type->shape[i], ir_true_type->shape[i]);
-            }
+            GALOIS_ASSERT(ir_condition_type->shape == ir_true_type->shape);
         }
         
-        return ir::TensorType::Create(ir_true_type->value_type, output_shape);
+        return ir::TensorType::Create(ir_true_type->value_type, ir_true_type->shape);
     }
 
     // Helper function for inline expression with 3 inputs
@@ -74,7 +61,6 @@ class SelectCreator : public Creator {
         ir_builder->Write(ir_select, ir_accessor_out);
     }
 
-    // Override virtual functions from Creator base class
     std::shared_ptr<ir::TensorType> InferType(
         std::vector<std::shared_ptr<ir::TensorType>> ir_input_types) override {
         GALOIS_ASSERT(ir_input_types.size() == 3);

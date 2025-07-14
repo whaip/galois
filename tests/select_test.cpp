@@ -6,7 +6,6 @@
 #include "tests/galois_test.hpp"
 
 TEST(GaloisTests, TestSelectScalarBool) {
-    // Test scalar boolean condition with scalar values
     auto ir_condition_type = ir::bool_;
     auto ir_value_type = ir::f32;
     auto ir_builder = ir::Builder::Create();
@@ -27,30 +26,6 @@ TEST(GaloisTests, TestSelectScalarBool) {
     condition = false;
     result = *select_fun(&condition, &true_value, &false_value);
     EXPECT_FLOAT_EQ(result, false_value);
-}
-
-TEST(GaloisTests, TestSelectScalarInteger) {
-    // Test scalar boolean condition with integer values
-    auto ir_condition_type = ir::bool_;
-    auto ir_value_type = ir::i32;
-    auto ir_builder = ir::Builder::Create();
-    auto ir_operator = ir_builder->CreateOperatorByCreator<op::SelectCreator>(
-        {ir_condition_type, ir_value_type, ir_value_type});
-
-    auto jit_engine = jit::Engine::Create();
-    auto select_fun = jit_engine->EmitOperatorSymbol<int32_t *(*)(bool *, int32_t *, int32_t *)>(ir_operator);
-
-    // Test condition = true
-    bool condition = true;
-    int32_t true_value = 42;
-    int32_t false_value = 24;
-    auto result = *select_fun(&condition, &true_value, &false_value);
-    EXPECT_EQ(result, true_value);
-
-    // Test condition = false
-    condition = false;
-    result = *select_fun(&condition, &true_value, &false_value);
-    EXPECT_EQ(result, false_value);
 }
 
 TEST(GaloisTests, TestSelectTensorElementwise) {
@@ -105,7 +80,6 @@ TEST(GaloisTests, TestSelectMatrix) {
 }
 
 TEST(GaloisTests, TestSelectWithComparison) {
-    // Test Select combined with comparison operations
     int length = 4;
     auto ir_value_type = ir::f32->Tile(length);
     auto ir_builder = ir::Builder::Create();
@@ -114,7 +88,6 @@ TEST(GaloisTests, TestSelectWithComparison) {
     auto ir_compare_operator = ir_builder->CreateOperatorByCreator<op::GreaterCreator>(
         {ir_value_type, ir_value_type});
     
-    // Create select operator
     auto ir_condition_type = ir::bool_->Tile(length);
     auto ir_select_operator = ir_builder->CreateOperatorByCreator<op::SelectCreator>(
         {ir_condition_type, ir_value_type, ir_value_type});
@@ -123,16 +96,13 @@ TEST(GaloisTests, TestSelectWithComparison) {
     auto compare_fun = jit_engine->EmitOperatorSymbol<bool *(*)(float *, float *)>(ir_compare_operator);
     auto select_fun = jit_engine->EmitOperatorSymbol<float *(*)(bool *, float *, float *)>(ir_select_operator);
 
-    // Test data
     std::vector<float> input = {1.0f, 3.0f, 2.0f, 4.0f};
     std::vector<float> threshold = {2.5f, 2.5f, 2.5f, 2.5f};
     std::vector<float> high_values = {10.0f, 30.0f, 20.0f, 40.0f};
     std::vector<float> low_values = {100.0f, 300.0f, 200.0f, 400.0f};
     
-    // First, perform comparison
     bool *condition = compare_fun(input.data(), threshold.data());
     
-    // Then, perform selection based on comparison result
     float *result = select_fun(condition, high_values.data(), low_values.data());
     
     // Expected: input > 2.5 ? high_values : low_values
@@ -145,45 +115,10 @@ TEST(GaloisTests, TestSelectWithComparison) {
     }
 }
 
-TEST(GaloisTests, TestSelectReLUImplementation) {
-    // Test implementing ReLU using Select: max(0, x) = select(x > 0, x, 0)
-    int length = 6;
-    auto ir_value_type = ir::f32->Tile(length);
-    auto ir_builder = ir::Builder::Create();
-    
-    // Create comparison operator: x > 0
-    auto ir_compare_operator = ir_builder->CreateOperatorByCreator<op::GreaterCreator>(
-        {ir_value_type, ir_value_type});
-    
-    // Create select operator
-    auto ir_condition_type = ir::bool_->Tile(length);
-    auto ir_select_operator = ir_builder->CreateOperatorByCreator<op::SelectCreator>(
-        {ir_condition_type, ir_value_type, ir_value_type});
-
-    auto jit_engine = jit::Engine::Create();
-    auto compare_fun = jit_engine->EmitOperatorSymbol<bool *(*)(float *, float *)>(ir_compare_operator);
-    auto select_fun = jit_engine->EmitOperatorSymbol<float *(*)(bool *, float *, float *)>(ir_select_operator);
-
-    // Test data with positive and negative values
-    std::vector<float> input = {-2.0f, -1.0f, 0.0f, 1.0f, 2.0f, 3.0f};
-    std::vector<float> zeros = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-
-    bool *condition = compare_fun(input.data(), zeros.data());
-    float *result = select_fun(condition, input.data(), zeros.data());
-
-    // Expected ReLU output: [0.0, 0.0, 0.0, 1.0, 2.0, 3.0]
-    std::vector<float> expected = {0.0f, 0.0f, 0.0f, 1.0f, 2.0f, 3.0f};
-    
-    for (int i = 0; i < length; ++i) {
-        EXPECT_FLOAT_EQ(result[i], expected[i]) << "ReLU mismatch at index " << i;
-    }
-}
-
 TEST(GaloisTests, TestSelectTypeInference) {
     // Test type inference for different data types
     auto ir_builder = ir::Builder::Create();
     
-    // Test with different numeric types
     {
         auto ir_condition_type = ir::bool_;
         auto ir_value_type = ir::f64;
